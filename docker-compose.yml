@@ -1,0 +1,58 @@
+services:
+  airflow-init:
+    build: .
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init && \
+        airflow users create \
+          --username harley \
+          --firstname Harley \
+          --lastname Rueda \
+          --role Admin \
+          --email harleyrueda21@gmail.com \
+          --password enovo0407
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+    volumes:
+      - airflow_db:/opt/airflow
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./logs:/opt/airflow/logs
+      - ./warehouse:/opt/airflow/warehouse
+      - ./exports:/opt/airflow/exports
+    restart: "no"
+
+  airflow:
+    build: .
+    container_name: airflow-duckdb
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+    entrypoint: >
+      bash -c "
+        airflow webserver --port 8080 --debug &
+        exec airflow scheduler
+      "
+    ports:
+      - "8080:8080"
+    volumes:
+      - airflow_db:/opt/airflow
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./logs:/opt/airflow/logs
+      - ./warehouse:/opt/airflow/warehouse
+      - ./exports:/opt/airflow/exports
+
+volumes:
+  airflow_db:
+

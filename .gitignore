@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment directories
+venv/
+.venv/
+
+# Airflow files and logs
+logs/
+*.db
+warehouse/
+
+# GTFS data and export files
+data/
+exports/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code settings
+.vscode/
+
+# Environment variables and system files
+.env
+.DS_Store
+
+

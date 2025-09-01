@@ -1,0 +1,8 @@
+pandas
+duckdb
+pyarrow
+requests
+gtfs-realtime-bindings
+geopandas
+matplotlib
+jupyterlab
