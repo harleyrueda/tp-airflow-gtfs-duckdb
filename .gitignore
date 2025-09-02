@@ -6,6 +6,7 @@ __pycache__/
 # Virtual environment directories
 venv/
 .venv/
+geovenv/
 
 # Airflow files and logs
 logs/
