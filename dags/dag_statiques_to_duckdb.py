@@ -38,23 +38,6 @@ def unzip_static_files():
 def load_static_to_duckdb():
     print("--------------- START ------------------------")
 
-    # stops table duckDB
-
-    duckdb.sql(
-        f"""
-        CREATE OR REPLACE TABLE stops AS
-        SELECT * FROM read_csv_auto('{os.path.join(DATA_DIR, "stops.txt")}', HEADER=TRUE)
-    """
-    )
-    print("aperçu de stops (10 ligns) :")
-    duckdb.sql("SELECT * FROM stops LIMIT 10").show()
-
-    # routes table duckDB
-
-
-def load_static_to_duckdb():
-    print("--------------- START ------------------------")
-
     # stops.txt
     duckdb.sql(
         f"""
