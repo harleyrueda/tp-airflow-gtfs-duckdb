@@ -85,6 +85,20 @@ def load_static_to_duckdb():
     print("aperçu de trips (10 lignes) :")
     duckdb.sql("SELECT * FROM trips LIMIT 10").show()
 
+    # stop times
+    duckdb.sql(
+        f"""
+        CREATE OR REPLACE TABLE stop_times AS
+        SELECT * FROM read_csv_auto(
+            '{os.path.join(DATA_DIR, "stop_times.txt")}', HEADER=TRUE,
+            SAMPLE_SIZE=-1,
+            ALL_VARCHAR=TRUE
+        )
+        """
+    )
+    print("aperçu de stop_times (10 lignes) :")
+    duckdb.sql("SELECT * FROM stop_times LIMIT 10").show()
+
     print("--------------- END ------------------------")
 
 
