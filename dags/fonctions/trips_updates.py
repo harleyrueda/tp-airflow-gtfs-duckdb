@@ -104,12 +104,12 @@ def load_trips_updates_db():
     # correction epoch a datetime Europe Paris
     def epoch_to_paris_datetime(epoch):
         try:
-            return datetime.fromtimestamp(int(epoch), tz=ZoneInfo("Europe/Paris"))
+            return datetime.fromtimestamp(int(epoch))
         except:
             return None
 
-    my_df["arrival_dt_paris"] = my_df["arrival_time"].apply(epoch_to_paris_datetime)
-    my_df["departure_dt_paris"] = my_df["departure_time"].apply(epoch_to_paris_datetime)
+    my_df["arrival_dt"] = my_df["arrival_time"].apply(epoch_to_paris_datetime)
+    my_df["departure_dt"] = my_df["departure_time"].apply(epoch_to_paris_datetime)
 
     con = duckdb.connect(WAREHOUSE)
     con.register("df_view", my_df)

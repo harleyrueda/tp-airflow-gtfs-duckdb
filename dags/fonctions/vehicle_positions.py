@@ -104,13 +104,13 @@ def load_vehicle_positions_db():
 
     my_df = pd.read_csv(CSV_FILE_VEHICLE)
 
-    def epoch_to_paris_datetime(epoch):
+    def epoch_to_datetime(epoch):
         try:
-            return datetime.fromtimestamp(int(epoch), tz=ZoneInfo("Europe/Paris"))
+            return datetime.fromtimestamp(int(epoch))
         except:
             return None
 
-    my_df["timestamp_paris"] = my_df["timestamp"].apply(epoch_to_paris_datetime)
+    my_df["timestamp_dt"] = my_df["timestamp"].apply(epoch_to_datetime)
 
     con = duckdb.connect(WAREHOUSE)
     con.register("df_view", my_df)
