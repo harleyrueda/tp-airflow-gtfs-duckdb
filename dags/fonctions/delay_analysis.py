@@ -26,56 +26,54 @@ def average_delay_by_minute():
         con.sql(
             f"""
             COPY (
-              WITH actual AS (
+                WITH first_stop AS (
+                    SELECT trip_id, MIN(stop_sequence) AS first_seq
+                    FROM trips_updates
+                    GROUP BY trip_id
+                ),
+                trip_start AS (
+                    SELECT
+                        tu.trip_id,
+                        tu.arrival_dt AS trip_start_utc,
+                        st.arrival_time_sec AS trip_start_sec
+                    FROM trips_updates tu
+                    JOIN first_stop fs 
+                        ON tu.trip_id = fs.trip_id AND tu.stop_sequence = fs.first_seq
+                    JOIN stop_times st 
+                        ON tu.trip_id = st.trip_id AND tu.stop_sequence = st.stop_sequence
+                    WHERE tu.arrival_dt IS NOT NULL AND st.arrival_time_sec IS NOT NULL
+                ),
+                full_data AS (
+                    SELECT
+                        tu.trip_id,
+                        tu.stop_sequence,
+                        st.stop_id,
+                        CAST(tu.arrival_dt AS TIMESTAMP WITH TIME ZONE) AS arrival_dt_utc,
+                        st.arrival_time_sec,
+                        ts.trip_start_utc,
+                        ts.trip_start_sec
+                    FROM trips_updates tu
+                    JOIN stop_times st 
+                        ON tu.trip_id = st.trip_id AND tu.stop_sequence = st.stop_sequence
+                    JOIN trip_start ts 
+                        ON tu.trip_id = ts.trip_id
+                )
                 SELECT
-                  tu.trip_id,
-                  tu.stop_sequence,
-                  CAST(tu.arrival_dt AS TIMESTAMP WITH TIME ZONE) AS arrival_dt_utc
-                FROM trips_updates tu
-                WHERE tu.arrival_dt IS NOT NULL
-              ),
-              sched AS (
-                SELECT
-                  st.trip_id,
-                  CAST(st.stop_sequence AS BIGINT) AS stop_sequence,
-                  st.arrival_time_sec
-                FROM stop_times st
-                WHERE st.arrival_time_sec IS NOT NULL
-              ),
-              joined AS (
-                SELECT
-                  a.arrival_dt_utc,
-                  CAST(a.arrival_dt_utc AT TIME ZONE 'Europe/Paris' AS DATE) AS local_service_day,
-                  s.arrival_time_sec
-                FROM actual a
-                JOIN sched s
-                  ON a.trip_id = s.trip_id
-                 AND a.stop_sequence = s.stop_sequence
-              ),
-              per_event AS (
-                SELECT
-                  arrival_dt_utc,
-                  (
-                    (local_service_day + arrival_time_sec * INTERVAL '1 second')
-                    AT TIME ZONE 'Europe/Paris'
-                  ) AS scheduled_ts_utc,
-                  EXTRACT(
-                    EPOCH FROM (
-                      arrival_dt_utc
-                      - ((local_service_day + arrival_time_sec * INTERVAL '1 second') AT TIME ZONE 'Europe/Paris')
-                    )
-                  ) / 60.0 AS delay_min
-                FROM joined
-              )
-              SELECT
-                DATE_TRUNC('minute', arrival_dt_utc AT TIME ZONE 'Europe/Paris') AS minute_ts,
-                ROUND(AVG(delay_min), 2) AS avg_delay_min
-              FROM per_event
-              GROUP BY 1
-              ORDER BY 1
+                    DATE_TRUNC('minute', arrival_dt_utc AT TIME ZONE 'Europe/Paris') AS minute_ts,
+                    ROUND(AVG(
+                        EXTRACT(EPOCH FROM (
+                            arrival_dt_utc - (
+                                trip_start_utc + (arrival_time_sec - trip_start_sec) * INTERVAL '1 second'
+                            )
+                        )) / 60.0
+                    ), 2) AS avg_delay_min
+                FROM full_data
+                WHERE arrival_time_sec IS NOT NULL
+                GROUP BY 1
+                ORDER BY 1
             ) TO '{out_path_esc}' (HEADER, DELIMITER ',');
-        """
+            """
         )
-        print(f"[P1] CSV exportado: {out_path}")
+        print(f"[Q1] CSV exporte: {out_path}")
     finally:
         con.close()

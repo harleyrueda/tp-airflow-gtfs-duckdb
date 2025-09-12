@@ -27,7 +27,10 @@ from fonctions.vehicle_positions import (
 )
 
 from fonctions.delay_analysis import average_delay_by_minute
-from fonctions.routes_analysis import position_bus_vehicles
+from fonctions.routes_analysis import position_bus_vehicles, average_delay_by_route
+
+from fonctions.view_support_delay import create_delays_with_support_columns
+from fonctions.stops_cartes_analysis import average_delay_by_stop
 
 # Selon la documentation duck db ne permert pas ecrire plusiers tables en meme temps, donc creation de init_duckdb ensuite reorganisation de taches dans taskgroups:
 
@@ -112,6 +115,13 @@ with DAG(
             python_callable=load_vehicle_positions_db,
         )
 
+    # ----------------- creation table view support -delay + colonnes -------------
+
+    create_view = PythonOperator(
+        task_id="create_delays_with_support_columns",
+        python_callable=create_delays_with_support_columns,
+    )
+
     # ------------------ Transformation en DuckDB ---------------------
     with TaskGroup("duckdb_transformation") as TGdag_transform:
         average_delay = PythonOperator(
@@ -122,5 +132,13 @@ with DAG(
             task_id="position_bus_vehicles",
             python_callable=position_bus_vehicles,
         )
+        stop_delay = PythonOperator(
+            task_id="average_delay_by_stop",
+            python_callable=average_delay_by_stop,
+        )
+        delay_by_route = PythonOperator(
+            task_id="average_delay_by_route",
+            python_callable=average_delay_by_route,
+        )
 
-    TGdag_download >> init >> TGdag_load >> TGdag_transform
+    TGdag_download >> init >> TGdag_load >> create_view >> TGdag_transform
