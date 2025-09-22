@@ -26,11 +26,13 @@ from fonctions.vehicle_positions import (
     load_vehicle_positions_db,
 )
 
-from fonctions.delay_analysis import average_delay_by_minute
+from fonctions.delay_analysis import average_delay_by_minute, punctuality_rate
 from fonctions.routes_analysis import position_bus_vehicles, average_delay_by_route
 
 from fonctions.view_support_delay import create_delays_with_support_columns
 from fonctions.stops_cartes_analysis import average_delay_by_stop
+from fonctions.heatmap_delay_day import heatmap_delay_day
+from fonctions.evolution_delay_stop_analysis_q7 import evolution_delay_by_stop
 
 # Selon la documentation duck db ne permert pas ecrire plusiers tables en meme temps, donc creation de init_duckdb ensuite reorganisation de taches dans taskgroups:
 
@@ -50,7 +52,7 @@ def init_duckdb():
 with DAG(
     dag_id="dag_gtfs_general",
     start_date=datetime(2025, 9, 1),
-    schedule_interval=None,
+    schedule_interval="0 10,15,16 * * *",
     catchup=False,
     max_active_runs=1,
     concurrency=1,
@@ -140,5 +142,20 @@ with DAG(
             task_id="average_delay_by_route",
             python_callable=average_delay_by_route,
         )
+        punctuality = PythonOperator(
+            task_id="punctuality_rate",
+            python_callable=punctuality_rate,
+        )
+        heatmap_q5 = PythonOperator(
+            task_id="heatmap_delay_day",
+            python_callable=heatmap_delay_day,
+        )
+        evolution_q7 = PythonOperator(
+            task_id="evolution_delay_by_stop",
+            python_callable=evolution_delay_by_stop,
+        )
+
+        average_delay >> heatmap_q5
+        stop_delay >> evolution_q7
 
     TGdag_download >> init >> TGdag_load >> create_view >> TGdag_transform

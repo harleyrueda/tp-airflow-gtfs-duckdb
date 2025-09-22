@@ -77,3 +77,29 @@ def average_delay_by_minute():
         print(f"[Q1] CSV exporte: {out_path}")
     finally:
         con.close()
+
+
+# ----------- Taux  de punctualite QUESTION 6 -----
+
+
+def punctuality_rate():
+    ts = current_timestamp_string()
+    out_path = os.path.join(EXPORT_DIR, f"punctuality_rate_{ts}.csv")
+    out_path_esc = out_path.replace("'", "''")
+
+    con = duckdb.connect(WAREHOUSE)
+    try:
+        con.sql(
+            f"""
+            COPY (
+                SELECT
+                    COUNT(*) AS total_events,
+                    COUNT_IF(delay_min <= 5) AS on_time_events,
+                    ROUND(100.0 * COUNT_IF(delay_min <= 5) / COUNT(*), 2) AS pct_on_time
+                FROM delays_with_support_columns
+            ) TO '{out_path_esc}' (HEADER, DELIMITER ',');
+            """
+        )
+        print(f"[Q6] CSV exporté: {out_path}")
+    finally:
+        con.close()
