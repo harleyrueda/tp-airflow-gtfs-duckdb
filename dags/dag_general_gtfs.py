@@ -60,7 +60,7 @@ with DAG(
 ) as dag:
 
     # -------------------- extraction  parsing  export ------------------------------------------
-    with TaskGroup("download_parse_export") as TGdag_download:
+    with TaskGroup("extraction_download_parsing_export") as TGdag_download:
         # statiques
         s1 = PythonOperator(
             task_id="download_static_zip", python_callable=download_static_zip
@@ -118,14 +118,14 @@ with DAG(
         )
 
     # ----------------- creation table view support -delay + colonnes -------------
-
-    create_view = PythonOperator(
-        task_id="create_delays_with_support_columns",
-        python_callable=create_delays_with_support_columns,
-    )
+    with TaskGroup("canonical_view_delay_min") as TGdag_canonical_view:
+        create_view = PythonOperator(
+            task_id="create_delays_with_support_columns",
+            python_callable=create_delays_with_support_columns,
+        )
 
     # ------------------ Transformation en DuckDB ---------------------
-    with TaskGroup("duckdb_transformation") as TGdag_transform:
+    with TaskGroup("duckdb_transformation_questions_chargement") as TGdag_transform:
         average_delay = PythonOperator(
             task_id="average_delay_by_minute",
             python_callable=average_delay_by_minute,
@@ -158,4 +158,4 @@ with DAG(
         average_delay >> heatmap_q5
         stop_delay >> evolution_q7
 
-    TGdag_download >> init >> TGdag_load >> create_view >> TGdag_transform
+    TGdag_download >> init >> TGdag_load >> TGdag_canonical_view >> TGdag_transform

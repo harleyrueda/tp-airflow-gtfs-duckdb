@@ -100,6 +100,6 @@ def punctuality_rate():
             ) TO '{out_path_esc}' (HEADER, DELIMITER ',');
             """
         )
-        print(f"[Q6] CSV exporté: {out_path}")
+        print(f"[Q6] CSV exporte: {out_path}")
     finally:
         con.close()

@@ -39,7 +39,7 @@ def heatmap_delay_day():
                     COUNT(*) AS nb_events
                 FROM delays_csv
                 WHERE minute_ts IS NOT NULL
-                AND minute_ts <= now()
+                AND minute_ts <= now() AT TIME ZONE 'Europe/Paris'
                 GROUP BY jour_date, heure
                 ORDER BY jour_date, heure
             )
